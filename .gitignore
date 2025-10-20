@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.python-version
+.mypy_cache/
+.pyre/
+
+# Virtual environments
+.env/
+.venv/
+venv/
+ENV/
+env.bak/
+env/
+
+# Distribution / build
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Logs and databases
+*.log
+*.sqlite
+*.sqlite3
+kintari.db
+*.db
+
+# Environment files (keep secrets out of repo)
+.env
+.env.local
+.env.*.local
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+noxfile_.*
+coverage.xml
+
+# Static/media/uploads and temporary files
+uploads/
+tmp/
+temp/
+*.tmp
+*.swp
+
+# PDF parsing / extraction outputs
+*.parsed.json
+*.extracted.txt
+extracted/
+pdf_output/
+
+# Node / Frontend (if any)
+node_modules/
+dist/
+.next/
+.out/
+
+# Docker
+docker-compose.override.yml
+*.compose.*
+
+# Secrets and keys
+*.pem
+*.key
+
+# Misc
+celerybeat-schedule
+*.cache
