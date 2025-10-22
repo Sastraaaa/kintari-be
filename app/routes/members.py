@@ -16,7 +16,7 @@ async def upload_members_csv(
     """
     Upload data anggota dari file CSV
     """
-    if not file.filename.lower().endswith(".csv"):
+    if file.filename is None or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed")
 
     try:
