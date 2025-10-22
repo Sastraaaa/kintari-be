@@ -73,7 +73,11 @@ class PDFExtractor:
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                return match.group(1) if ":" in pattern else match.group(0)
+                # Check if pattern has capture group
+                if match.lastindex and match.lastindex >= 1:
+                    return match.group(1)
+                else:
+                    return match.group(0)
         return "Unknown"
 
     @staticmethod
@@ -99,7 +103,11 @@ class PDFExtractor:
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                return match.group(1) if ":" in pattern else match.group(0)
+                # Check if pattern has capture group
+                if match.lastindex and match.lastindex >= 1:
+                    return match.group(1)
+                else:
+                    return match.group(0)
         return "Unknown"
 
     @staticmethod
