@@ -18,7 +18,7 @@ async def upload_organization_document(
     """
     Upload dan ekstrak dokumen organisasi (HIPMI PDF)
     """
-    if not file.filename.lower().endswith(".pdf"):
+    if file.filename is None or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
     try:
@@ -50,9 +50,13 @@ async def upload_organization_document(
             "message": "Document uploaded and processed successfully",
             "organization_id": org.id,
             "data": {
-                "name": org.name,
-                "founded_date": org.founded_date,
-                "ideology": org.ideology,
+                "name": str(org.name) if org.name is not None else "Unknown",
+                "founded_date": (
+                    str(org.founded_date) if org.founded_date is not None else "Unknown"
+                ),
+                "ideology": (
+                    str(org.ideology) if org.ideology is not None else "Unknown"
+                ),
             },
         }
 
@@ -67,20 +71,28 @@ async def get_organization_data(org_id: int, db: Session = Depends(get_db)):
     """
     org = OrganizationService.get_organization_by_id(db, org_id)
 
-    if not org:
+    if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
     return {
         "status": "success",
         "data": {
             "id": org.id,
-            "name": org.name,
-            "founded_date": org.founded_date,
-            "ideology": org.ideology,
-            "legal_basis": org.legal_basis,
-            "objectives": org.objectives,
-            "summary": org.summary,
-            "extracted_at": org.extracted_at.isoformat() if org.extracted_at else None,
+            "name": str(org.name) if org.name is not None else "Unknown",
+            "founded_date": (
+                str(org.founded_date) if org.founded_date is not None else "Unknown"
+            ),
+            "ideology": str(org.ideology) if org.ideology is not None else "Unknown",
+            "legal_basis": (
+                str(org.legal_basis) if org.legal_basis is not None else "Unknown"
+            ),
+            "objectives": (
+                str(org.objectives) if org.objectives is not None else "Unknown"
+            ),
+            "summary": str(org.summary) if org.summary is not None else "",
+            "extracted_at": (
+                org.extracted_at.isoformat() if org.extracted_at is not None else None
+            ),
         },
     }
 
@@ -92,20 +104,28 @@ async def get_latest_organization(db: Session = Depends(get_db)):
     """
     org = OrganizationService.get_latest_organization(db)
 
-    if not org:
+    if org is None:
         raise HTTPException(status_code=404, detail="No organization data found")
 
     return {
         "status": "success",
         "data": {
             "id": org.id,
-            "name": org.name,
-            "founded_date": org.founded_date,
-            "ideology": org.ideology,
-            "legal_basis": org.legal_basis,
-            "objectives": org.objectives,
-            "summary": org.summary,
-            "extracted_at": org.extracted_at.isoformat() if org.extracted_at else None,
+            "name": str(org.name) if org.name is not None else "Unknown",
+            "founded_date": (
+                str(org.founded_date) if org.founded_date is not None else "Unknown"
+            ),
+            "ideology": str(org.ideology) if org.ideology is not None else "Unknown",
+            "legal_basis": (
+                str(org.legal_basis) if org.legal_basis is not None else "Unknown"
+            ),
+            "objectives": (
+                str(org.objectives) if org.objectives is not None else "Unknown"
+            ),
+            "summary": str(org.summary) if org.summary is not None else "",
+            "extracted_at": (
+                org.extracted_at.isoformat() if org.extracted_at is not None else None
+            ),
         },
     }
 
@@ -123,11 +143,17 @@ async def get_all_organizations(db: Session = Depends(get_db)):
         "data": [
             {
                 "id": org.id,
-                "name": org.name,
-                "founded_date": org.founded_date,
-                "ideology": org.ideology,
+                "name": str(org.name) if org.name is not None else "Unknown",
+                "founded_date": (
+                    str(org.founded_date) if org.founded_date is not None else "Unknown"
+                ),
+                "ideology": (
+                    str(org.ideology) if org.ideology is not None else "Unknown"
+                ),
                 "extracted_at": (
-                    org.extracted_at.isoformat() if org.extracted_at else None
+                    org.extracted_at.isoformat()
+                    if org.extracted_at is not None
+                    else None
                 ),
             }
             for org in orgs
@@ -142,10 +168,11 @@ async def summarize_organization_context(org_id: int, db: Session = Depends(get_
     """
     org = OrganizationService.get_organization_by_id(db, org_id)
 
-    if not org:
+    if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
     gemini = GeminiService()
-    summary = gemini.summarize_text(org.full_text or "")
+    full_text = str(org.full_text) if org.full_text is not None else ""
+    summary = gemini.summarize_text(full_text)
 
     return {"status": "success", "organization_id": org_id, "summary": summary}
