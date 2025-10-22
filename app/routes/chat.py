@@ -15,11 +15,11 @@ async def chat_query(request: ChatQuerySchema, db: Session = Depends(get_db)):
     """
     try:
         # Jika tidak ada context, ambil dari data organisasi terbaru
-        context = request.context
+        context: str = request.context or ""
         if not context:
             org = OrganizationService.get_latest_organization(db)
-            if org and org.full_text:
-                context = org.full_text[:3000]  # Limit context size
+            if org is not None and org.full_text is not None:
+                context = str(org.full_text)[:3000]  # Limit context size
             else:
                 raise HTTPException(
                     status_code=404, detail="No organization context available"
@@ -49,16 +49,18 @@ async def get_chat_context(db: Session = Depends(get_db)):
     """
     org = OrganizationService.get_latest_organization(db)
 
-    if not org:
+    if org is None:
         raise HTTPException(status_code=404, detail="No context available")
+
+    # Extract values safely
+    full_text = str(org.full_text) if org.full_text is not None else ""
+    context_preview = full_text[:2000] + "..." if len(full_text) > 2000 else full_text
 
     return {
         "status": "success",
-        "context": (
-            org.full_text[:2000] + "..."
-            if org.full_text and len(org.full_text) > 2000
-            else org.full_text
+        "context": context_preview,
+        "source": str(org.name) if org.name is not None else "Unknown",
+        "extracted_at": (
+            org.extracted_at.isoformat() if org.extracted_at is not None else None
         ),
-        "source": org.name,
-        "extracted_at": org.extracted_at.isoformat() if org.extracted_at else None,
     }
