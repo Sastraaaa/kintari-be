@@ -181,17 +181,17 @@ kintari-be/
 - 🌐 Batasi ALLOWED_ORIGINS untuk production
 - 🔒 Setup HTTPS untuk production deployment
 
-## � Tech Stack
+## 📄 Tech Stack
 
-| Layer     | Technology               |
-| --------- | ------------------------ |
-| Framework | FastAPI 0.104.1          |
-| Server    | Uvicorn 0.24.0           |
-| Database  | SQLite + SQLAlchemy      |
-| ORM       | SQLAlchemy 2.x + Alembic |
-| PDF       | pdfplumber + PyMuPDF     |
-| AI        | Google Gemini API        |
-| Testing   | pytest + pytest-asyncio  |
+| Layer     | Technology                              |
+| --------- | --------------------------------------- |
+| Framework | FastAPI 0.104.1                         |
+| Server    | Uvicorn 0.24.0                          |
+| Database  | SQLite + SQLAlchemy                     |
+| ORM       | SQLAlchemy 2.x + Alembic                |
+| PDF       | pdfplumber + PyMuPDF                    |
+| AI        | **google-genai (gemini-2.0-flash-exp)** |
+| Testing   | pytest + pytest-asyncio                 |
 
 ## 🤝 Integration dengan Frontend
 
