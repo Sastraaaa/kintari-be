@@ -18,10 +18,14 @@ async def get_stats_overview(db: Session = Depends(get_db)):
         "status": "success",
         "stats": {
             "total_organizations": len(orgs),
-            "latest_organization": latest_org.name if latest_org else None,
+            "latest_organization": (
+                str(latest_org.name)
+                if latest_org and latest_org.name is not None
+                else None
+            ),
             "last_updated": (
                 latest_org.extracted_at.isoformat()
-                if latest_org and latest_org.extracted_at
+                if latest_org and latest_org.extracted_at is not None
                 else None
             ),
         },
