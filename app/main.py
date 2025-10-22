@@ -2,15 +2,46 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import ALLOWED_ORIGINS
 from app.core.database import Base, engine
-from app.routes import members, documents, chat, stats, organization
+
+# Import all models to ensure they're registered with SQLAlchemy
+from app.models import (
+    Member,
+    OrganizationInfo,
+    MembershipType,
+    OrgStructure,
+    Document,
+    UniversalDocument,
+    DocumentCollection,
+)
+
+from app.routes import (
+    members,
+    documents,
+    chat,
+    stats,
+    organization,
+    universal_documents,
+)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Kintari Backend API",
-    description="Backend API untuk Kintari dengan ekstraksi dokumen HIPMI dan Gemini AI Integration",
-    version="1.0.0",
+    title="Kintari Backend API - Universal Knowledge Base",
+    description="""
+    Backend API untuk Kintari dengan Universal Document Knowledge Base.
+    
+    🚀 Features:
+    - Upload ANY type of PDF document
+    - Automatic text extraction and analysis
+    - AI-powered chatbot using ALL documents
+    - Advanced search and filtering
+    - Document collections
+    - Gemini AI Integration
+    
+    Upload documents and the AI chatbot will automatically use them as context!
+    """,
+    version="2.0.0",
 )
 
 # CORS Middleware
@@ -23,11 +54,12 @@ app.add_middleware(
 )
 
 # Include routes
-app.include_router(members.router)
-app.include_router(documents.router)
+app.include_router(universal_documents.router)  # NEW: Universal Documents (MAIN)
+app.include_router(chat.router)  # AI Chatbot with universal knowledge
 app.include_router(stats.router)
-app.include_router(chat.router)
-app.include_router(organization.router)
+app.include_router(organization.router)  # Legacy HIPMI-specific
+app.include_router(members.router)
+app.include_router(documents.router)  # Legacy documents
 
 
 @app.get("/")
