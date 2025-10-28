@@ -8,7 +8,6 @@ from app.models.organization import (
     OrganizationInfo,
     MembershipType,
     OrgStructure,
-    Document,
 )
 from app.models.universal_document import UniversalDocument, DocumentCollection
 
@@ -17,7 +16,6 @@ __all__ = [
     "OrganizationInfo",
     "MembershipType",
     "OrgStructure",
-    "Document",
     "UniversalDocument",
     "DocumentCollection",
 ]
