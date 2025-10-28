@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.gemini_service import GeminiService
-from app.services.organization_service import OrganizationService
 from app.services.universal_document_service import UniversalDocumentService
 from app.schemas.chat_schema import ChatQuerySchema, ChatResponseSchema
 
@@ -34,35 +33,30 @@ async def chat_query(request: ChatQuerySchema, db: Session = Depends(get_db)):
             )
 
             if not all_docs:
-                # Fallback to old organization data if no universal docs
-                org = OrganizationService.get_latest_organization(db)
-                if org is not None and org.full_text is not None:
-                    context = str(org.full_text)[:3000]
-                else:
-                    raise HTTPException(
-                        status_code=404,
-                        detail="No documents in knowledge base. Please upload documents first.",
+                raise HTTPException(
+                    status_code=404,
+                    detail="No documents in knowledge base. Please upload documents first.",
+                )
+
+            # Combine context from multiple documents
+            context_parts = []
+            sources = []
+
+            for doc in all_docs:
+                doc_text = doc.full_text
+                if doc_text is not None:
+                    # Add document info to context
+                    context_parts.append(
+                        f"[Document: {doc.filename} | Type: {doc.document_type}]\n"
+                        f"{doc_text[:2000]}\n"
                     )
-            else:
-                # Combine context from multiple documents
-                context_parts = []
-                sources = []
+                    sources.append(doc.filename)
 
-                for doc in all_docs:
-                    doc_text = doc.full_text
-                    if doc_text is not None:
-                        # Add document info to context
-                        context_parts.append(
-                            f"[Document: {doc.filename} | Type: {doc.document_type}]\n"
-                            f"{doc_text[:2000]}\n"
-                        )
-                        sources.append(doc.filename)
+            context = "\n\n---\n\n".join(context_parts)
 
-                context = "\n\n---\n\n".join(context_parts)
-
-                # Limit total context size
-                if len(context) > 15000:
-                    context = context[:15000] + "\n\n[Context truncated...]"
+            # Limit total context size
+            if len(context) > 15000:
+                context = context[:15000] + "\n\n[Context truncated...]"
 
         # Call Gemini AI
         gemini = GeminiService()
@@ -100,22 +94,42 @@ Instructions:
 @router.get("/context")
 async def get_chat_context(db: Session = Depends(get_db)):
     """
-    Ambil konteks terbaru untuk chatbot
+    📚 GET CHAT CONTEXT
+
+    Get current context from universal knowledge base
+    Returns preview of all documents used by chatbot
     """
-    org = OrganizationService.get_latest_organization(db)
+    # Get all documents from universal knowledge base
+    all_docs = UniversalDocumentService.get_all_documents(db=db, limit=10)
 
-    if org is None:
-        raise HTTPException(status_code=404, detail="No context available")
+    if not all_docs:
+        raise HTTPException(
+            status_code=404,
+            detail="No documents in knowledge base. Please upload documents first.",
+        )
 
-    # Extract values safely
-    full_text = str(org.full_text) if org.full_text is not None else ""
-    context_preview = full_text[:2000] + "..." if len(full_text) > 2000 else full_text
+    # Build context preview
+    context_parts = []
+    for doc in all_docs:
+        doc_text = doc.full_text
+        if doc_text is not None:
+            preview = (
+                str(doc_text)[:500] + "..."
+                if len(str(doc_text)) > 500
+                else str(doc_text)
+            )
+            context_parts.append(
+                {
+                    "filename": doc.filename,
+                    "document_type": doc.document_type,
+                    "preview": preview,
+                    "uploaded_at": doc.uploaded_at.isoformat() if doc.uploaded_at is not None else None,  # type: ignore
+                }
+            )
 
     return {
         "status": "success",
-        "context": context_preview,
-        "source": str(org.name) if org.name is not None else "Unknown",
-        "extracted_at": (
-            org.extracted_at.isoformat() if org.extracted_at is not None else None
-        ),
+        "total_documents": len(all_docs),
+        "documents": context_parts,
+        "source": "Universal Knowledge Base",
     }
