@@ -9,17 +9,14 @@ from app.models import (
     OrganizationInfo,
     MembershipType,
     OrgStructure,
-    Document,
     UniversalDocument,
     DocumentCollection,
 )
 
 from app.routes import (
     members,
-    documents,
     chat,
     stats,
-    organization,
     universal_documents,
 )
 
@@ -54,12 +51,10 @@ app.add_middleware(
 )
 
 # Include routes
-app.include_router(universal_documents.router)  # NEW: Universal Documents (MAIN)
-app.include_router(chat.router)  # AI Chatbot with universal knowledge
-app.include_router(stats.router)
-app.include_router(organization.router)  # Legacy HIPMI-specific
-app.include_router(members.router)
-app.include_router(documents.router)  # Legacy documents
+app.include_router(universal_documents.router)  # ⭐ Universal Documents (MAIN)
+app.include_router(chat.router)  # 🤖 AI Chatbot with universal knowledge
+app.include_router(stats.router)  # 📊 Statistics
+app.include_router(members.router)  # 👥 Members management
 
 
 @app.get("/")
