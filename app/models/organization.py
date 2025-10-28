@@ -43,18 +43,4 @@ class OrgStructure(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-class Document(Base):
-    __tablename__ = "documents"
-
-    id = Column(Integer, primary_key=True, index=True)
-    filename = Column(String, index=True)
-    file_path = Column(String)
-    document_type = Column(String)  # e.g., "HIPMI_PO", "AD_ART", etc
-    organization_id = Column(Integer, nullable=True)
-    file_size = Column(Float)
-    extracted_text = Column(Text, nullable=True)
-    upload_date = Column(DateTime, default=datetime.utcnow)
-    processed = Column(
-        Integer, default=0
-    )  # 0: pending, 1: processing, 2: completed, 3: failed
-    processed_at = Column(DateTime, nullable=True)
+# Legacy Document model removed - use UniversalDocument instead
