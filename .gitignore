@@ -6,6 +6,8 @@ __pycache__/
 .python-version
 .mypy_cache/
 .pyre/
+.pytype/
+*.so
 
 # Virtual environments
 .env/
@@ -20,6 +22,9 @@ build/
 dist/
 *.egg-info/
 .eggs/
+*.egg
+MANIFEST
+*.whl
 
 # Installer logs
 pip-log.txt
@@ -31,42 +36,82 @@ pip-delete-this-directory.txt
 *.sqlite3
 kintari.db
 *.db
+db.sqlite3-journal
 
 # Environment files (keep secrets out of repo)
 .env
 .env.local
 .env.*.local
+.env.production
 
 # IDEs and editors
 .vscode/
 .idea/
 *.sublime-workspace
 *.sublime-project
+*.iml
+*.iws
+.idea_modules/
+*.code-workspace
 
 # OS files
 .DS_Store
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+.AppleDouble
+.LSOverride
+._*
 
 # Test / coverage
 .coverage
 .coverage.*
 htmlcov/
 .tox/
+.nox/
 noxfile_.*
 coverage.xml
+*.cover
+.hypothesis/
+nosetests.xml
 
 # Static/media/uploads and temporary files
 uploads/
+!uploads/.gitkeep
 tmp/
 temp/
 *.tmp
 *.swp
+*.bak
+*~
 
 # PDF parsing / extraction outputs
 *.parsed.json
 *.extracted.txt
 extracted/
 pdf_output/
+
+# Project specific - temporary/test files
+test_*.py
+*_test.py
+demo_*.py
+check_*.py
+UPLOAD_FIX.md
+*.md.backup
+*_fix.md
+
+# Alembic migrations (keep structure, ignore cache)
+alembic/versions/__pycache__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Jupyter Notebook
+.ipynb_checkpoints
 
 # Node / Frontend (if any)
 node_modules/
@@ -81,7 +126,12 @@ docker-compose.override.yml
 # Secrets and keys
 *.pem
 *.key
+*.crt
+secrets/
 
 # Misc
-celerybeat-schedule
 *.cache
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
