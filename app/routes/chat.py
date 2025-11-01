@@ -178,12 +178,47 @@ def detect_and_answer_specific_query(query: str, db: Session) -> dict | None:
                 },
             }
 
-    # 5. Pencarian Detail Anggota: "Cari info lengkap 'Rangga Gumilar Subagja'"
-    if "cari" in query_lower or "info lengkap" in query_lower or "siapa" in query_lower:
-        # Extract name dari query
+    # 5. Pencarian Detail Anggota: "Cari info lengkap 'Rangga Gumilar Subagja'" atau "ibrahim jabatannya apa?"
+    if (
+        "cari" in query_lower
+        or "info lengkap" in query_lower
+        or "siapa" in query_lower
+        or "jabatannya" in query_lower
+        or "perusahaannya" in query_lower
+        or "umurnya" in query_lower
+        or "kontaknya" in query_lower
+    ):
+        # Extract name dari query (dengan atau tanpa tanda kutip)
+        name = None
+
+        # Try with quotes first
         name_match = re.search(r"['\"]([^'\"]+)['\"]", query)
         if name_match:
             name = name_match.group(1)
+        else:
+            # Try without quotes - extract name from natural question
+            # Pattern: "nama jabatannya apa?" atau "info nama lengkap" atau "siapa nama"
+            # Remove common words and extract potential name
+            for word in [
+                "cari",
+                "info",
+                "lengkap",
+                "siapa",
+                "jabatannya",
+                "apa",
+                "sebagai",
+                "perusahaannya",
+                "umurnya",
+                "kontaknya",
+            ]:
+                query_lower = query_lower.replace(word, " ")
+
+            # Clean up and get potential name
+            potential_name = query_lower.strip()
+            if potential_name and len(potential_name) > 2:
+                name = potential_name
+
+        if name:
             member = (
                 db.query(Member)
                 .filter(func.lower(Member.name).like(f"%{name.lower()}%"))
@@ -388,35 +423,54 @@ async def chat_query(request: ChatQuerySchema, db: Session = Depends(get_db)):
             members = db.query(Member).all()
             members_count = len(members)
 
-            # Quick stats
+            # Quick stats untuk pengurus
             members_stats = {
                 "total": members_count,
-                "organizations": {},
-                "positions": {},
-                "regions": {},
-                "status": {"active": 0, "non_active": 0},
+                "jabatan": {},
+                "bidang_usaha": {},
+                "status_kta": {},
+                "gender": {"Male": 0, "Female": 0},
+                "total_karyawan": 0,
             }
 
+            # Build list of members for AI context
+            members_list = []
+
             for member in members:
-                org = member.organization or "Tidak Diketahui"
-                members_stats["organizations"][org] = (
-                    members_stats["organizations"].get(org, 0) + 1
+                # Collect stats
+                jabatan = member.jabatan or "Tidak Diketahui"
+                members_stats["jabatan"][jabatan] = (
+                    members_stats["jabatan"].get(jabatan, 0) + 1
                 )
 
-                pos = member.position or "Tidak Diketahui"
-                members_stats["positions"][pos] = (
-                    members_stats["positions"].get(pos, 0) + 1
+                bidang = member.kategori_bidang_usaha or "Tidak Diketahui"
+                members_stats["bidang_usaha"][bidang] = (
+                    members_stats["bidang_usaha"].get(bidang, 0) + 1
                 )
 
-                region = member.region or "Tidak Diketahui"
-                members_stats["regions"][region] = (
-                    members_stats["regions"].get(region, 0) + 1
+                status = member.status_kta or "Tidak Diketahui"
+                members_stats["status_kta"][status] = (
+                    members_stats["status_kta"].get(status, 0) + 1
                 )
 
-                if member.status == "active":
-                    members_stats["status"]["active"] += 1
-                else:
-                    members_stats["status"]["non_active"] += 1
+                if member.jenis_kelamin:
+                    members_stats["gender"][member.jenis_kelamin] = (
+                        members_stats["gender"].get(member.jenis_kelamin, 0) + 1
+                    )
+
+                if member.jmlh_karyawan:
+                    members_stats["total_karyawan"] += member.jmlh_karyawan
+
+                # Build member info for AI
+                if member.name:
+                    member_info = f"- {member.name}"
+                    if member.jabatan:
+                        member_info += f" (Jabatan: {member.jabatan})"
+                    if member.nama_perusahaan:
+                        member_info += f", Perusahaan: {member.nama_perusahaan}"
+                    if member.kategori_bidang_usaha:
+                        member_info += f", Bidang: {member.kategori_bidang_usaha}"
+                    members_list.append(member_info)
 
             # Get Document Analytics
             documents = db.query(UniversalDocument).all()
@@ -440,14 +494,19 @@ async def chat_query(request: ChatQuerySchema, db: Session = Depends(get_db)):
 
             # Add analytics context first
             analytics_context = f"""
-=== DATA HIPMI ANALYTICS ===
+=== DATA PENGURUS HIPMI ===
 
-ANGGOTA HIPMI:
-- Total Anggota: {members_stats['total']}
-- Status: {members_stats['status']['active']} aktif, {members_stats['status']['non_active']} non-aktif
-- Distribusi Organisasi: {members_stats['organizations']}
-- Distribusi Jabatan: {members_stats['positions']}
-- Distribusi Wilayah: {members_stats['regions']}
+STATISTIK PENGURUS:
+- Total Pengurus: {members_stats['total']}
+- Total Karyawan (semua perusahaan): {members_stats['total_karyawan']:,}
+- Gender: {members_stats['gender']['Male']} Pria, {members_stats['gender']['Female']} Wanita
+- Distribusi Jabatan: {members_stats['jabatan']}
+- Distribusi Bidang Usaha: {members_stats['bidang_usaha']}
+- Status KTA: {members_stats['status_kta']}
+
+DAFTAR PENGURUS:
+{chr(10).join(members_list[:50])}  
+{"... (dan " + str(len(members_list) - 50) + " pengurus lainnya)" if len(members_list) > 50 else ""}
 
 DOKUMEN HIPMI:
 - Total Dokumen: {docs_stats['total']}
@@ -512,17 +571,20 @@ DOKUMEN HIPMI:
 
         # Enhanced prompt with instruction
         enhanced_query = f"""
-Berdasarkan data HIPMI (anggota, dokumen organisasi, dan peraturan) yang tersedia, jawab pertanyaan berikut:
+Berdasarkan data HIPMI (pengurus, dokumen organisasi, dan peraturan) yang tersedia, jawab pertanyaan berikut:
 
 Pertanyaan: {request.query}
 
 Instruksi:
-- Gunakan data analytics untuk pertanyaan tentang statistik/angka
+- Gunakan DAFTAR PENGURUS untuk pertanyaan tentang nama, jabatan, perusahaan pengurus tertentu
+- Contoh: "Ibrahim jabatannya apa?" → cari di daftar pengurus nama "Ibrahim"
+- Gunakan data statistik untuk pertanyaan tentang angka/jumlah
 - Gunakan isi dokumen untuk pertanyaan tentang peraturan, sejarah, visi/misi, dll
-- Jika informasi tidak tersedia, katakan "Saya tidak memiliki informasi tersebut"
-- Sebutkan sumber data jika memungkinkan (nama file/dokumen)
-- Jawab dalam Bahasa Indonesia yang profesional
+- Jika informasi tidak tersedia, katakan "Saya tidak memiliki informasi tersebut dalam database"
+- Sebutkan sumber data jika memungkinkan (nama pengurus/file/dokumen)
+- Jawab dalam Bahasa Indonesia yang profesional dan jelas
 - Untuk pertanyaan tentang PO (Peraturan Organisasi), sebutkan nomor PO-nya
+- Untuk nama pengurus, gunakan nama lengkap yang ada di daftar
 """
 
         response = gemini.answer_question(enhanced_query, context)
