@@ -12,6 +12,8 @@ class MemberSchema(BaseModel):
     organization: Optional[str] = None
     membership_type: Optional[str] = None
     status: str = "active"
+    region: Optional[str] = None
+    entry_year: Optional[int] = None
     joined_date: Optional[datetime] = None
 
     class Config:
@@ -25,3 +27,5 @@ class MemberCreateSchema(BaseModel):
     position: Optional[str] = None
     organization: Optional[str] = None
     membership_type: Optional[str] = None
+    region: Optional[str] = None
+    entry_year: Optional[int] = None
