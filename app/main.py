@@ -18,6 +18,7 @@ from app.routes import (
     chat,
     stats,
     universal_documents,
+    analytics,
 )
 
 # Create tables
@@ -55,6 +56,7 @@ app.include_router(universal_documents.router)  # ⭐ Universal Documents (MAIN)
 app.include_router(chat.router)  # 🤖 AI Chatbot with universal knowledge
 app.include_router(stats.router)  # 📊 Statistics
 app.include_router(members.router)  # 👥 Members management
+app.include_router(analytics.router)  # 🧠 AI Analytics for HIPMI data
 
 
 @app.get("/")
