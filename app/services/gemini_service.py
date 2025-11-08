@@ -1,4 +1,5 @@
 import os
+import json
 from typing import Optional
 from google import genai
 from google.genai import types
@@ -10,152 +11,77 @@ class GeminiService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = "gemini-2.0-flash-exp"
-
-        # Initialize client dengan API key
-        if self.api_key:
-            self.client = genai.Client(api_key=self.api_key)
-        else:
-            self.client = None
+        self.client = genai.Client(api_key=self.api_key) if self.api_key else None
 
     def summarize_text(self, text: str, max_length: int = 500) -> str:
         """Ringkasan teks menggunakan Gemini"""
         if not self.api_key:
             return "API Key not configured"
 
-        prompt = f"""Buatkan ringkasan singkat dari teks berikut dalam {max_length} karakter:
-
-{text}
-
-Ringkasan:"""
-
+        prompt = f"Buatkan ringkasan singkat ({max_length} karakter) dari teks berikut:\n\n{text}\n\nRingkasan:"
         try:
-            response = self._call_api(prompt)
-            return response
+            return self._call_api(prompt)
         except Exception as e:
             return f"Error: {str(e)}"
 
     def answer_question(self, question: str, context: str) -> str:
-        """Menjawab pertanyaan berdasarkan konteks (untuk chatbot)"""
+        """Jawab pertanyaan berdasarkan konteks (chatbot)"""
         if not self.api_key:
             return "API Key not configured"
 
-        prompt = f"""Berdasarkan konteks berikut, jawab pertanyaan dengan jelas dan akurat:
-
-KONTEKS:
-{context}
-
-PERTANYAAN:
-{question}
-
-JAWABAN:"""
-
+        prompt = f"Berdasarkan konteks berikut, jawab pertanyaan:\n\nKONTEKS:\n{context}\n\nPERTANYAAN:\n{question}\n\nJAWABAN:"
         try:
-            response = self._call_api(prompt)
-            return response
+            return self._call_api(prompt)
         except Exception as e:
             return f"Error: {str(e)}"
 
     def extract_key_info(self, text: str) -> dict:
-        """Ekstrak informasi kunci dari dokumen"""
+        """Ekstrak info kunci dari dokumen organisasi"""
         if not self.api_key:
             return {"error": "API Key not configured"}
 
-        prompt = f"""Ekstrak informasi kunci berikut dari dokumen organisasi:
-1. Nama organisasi
-2. Tanggal berdiri
-3. Ideologi/Asas
-4. Tujuan utama
-5. Struktur organisasi (jika ada)
-
+        prompt = f"""Ekstrak info kunci dari dokumen: Nama organisasi, Tanggal berdiri, Asas, Tujuan, Struktur (jika ada).
+        
 Dokumen:
 {text[:2000]}
 
-Format jawaban sebagai JSON."""
-
+Format JSON."""
         try:
-            response = self._call_api(prompt)
-            return {"info": response}
+            return {"info": self._call_api(prompt)}
         except Exception as e:
             return {"error": str(e)}
 
     def analyze_members_data(self, members_data: list) -> dict:
-        """Analisis data anggota HIPMI dengan AI"""
+        """Analisis data pengurus HIPMI dengan AI"""
         if not self.api_key:
             return {"error": "API Key not configured"}
 
-        # Prepare data summary
+        # Build statistics
         total = len(members_data)
-        organizations = {}
-        positions = {}
-        membership_types = {}
-        years_data = {}
+        stats = self._build_member_stats(members_data)
 
-        for member in members_data:
-            # Count by organization
-            org = member.get("organization", "Unknown")
-            organizations[org] = organizations.get(org, 0) + 1
+        prompt = f"""Analisis data keanggotaan HIPMI berikut dan berikan insight:
 
-            # Count by position
-            pos = member.get("position", "Unknown")
-            positions[pos] = positions.get(pos, 0) + 1
+DATA ANGGOTA: Total {total}
+Distribusi Jabatan: {stats['positions']}
+Distribusi Bidang Usaha: {stats['business']}
+Distribusi Gender: {stats['gender']}
 
-            # Count by membership type
-            mtype = member.get("membership_type", "Unknown")
-            membership_types[mtype] = membership_types.get(mtype, 0) + 1
-
-            # Count by year
-            joined = member.get("joined_date", "")
-            if joined:
-                try:
-                    year = str(joined)[:4]
-                    years_data[year] = years_data.get(year, 0) + 1
-                except:
-                    pass
-
-        data_summary = f"""
-Total Anggota: {total}
-Distribusi Organisasi: {organizations}
-Distribusi Jabatan: {positions}
-Distribusi Tipe Membership: {membership_types}
-Distribusi per Tahun: {years_data}
-"""
-
-        prompt = f"""Sebagai AI analyst untuk organisasi HIPMI, analisis data keanggotaan berikut dan berikan insight:
-
-DATA ANGGOTA HIPMI:
-{data_summary}
-
-Berikan analisis dalam format JSON dengan struktur:
+Format JSON:
 {{
-    "summary": "Ringkasan singkat kondisi keanggotaan HIPMI (2-3 kalimat)",
+    "summary": "Ringkasan kondisi keanggotaan (2-3 kalimat)",
     "total_members": {total},
-    "key_insights": [
-        "Insight 1 tentang distribusi organisasi",
-        "Insight 2 tentang jabatan/posisi",
-        "Insight 3 tentang tren keanggotaan"
-    ],
-    "trends": "Analisis tren pertumbuhan anggota per tahun",
-    "recommendations": [
-        "Rekomendasi 1 untuk pengembangan",
-        "Rekomendasi 2 untuk retensi anggota"
-    ]
-}}
-
-Pastikan response dalam format JSON yang valid."""
+    "key_insights": ["Insight 1", "Insight 2", "Insight 3"],
+    "trends": "Analisis tren",
+    "recommendations": ["Rekomendasi 1", "Rekomendasi 2"]
+}}"""
 
         try:
             response = self._call_api(prompt)
-            # Try to parse as JSON, if fails return as text
-            import json
-
-            try:
-                return json.loads(response)
-            except:
-                return {
-                    "summary": response,
-                    "total_members": total,
-                    "raw_analysis": response,
-                }
+            parsed = json.loads(response)
+            return parsed
+        except json.JSONDecodeError:
+            return {"summary": response, "total_members": total, "raw_analysis": response}
         except Exception as e:
             return {"error": str(e)}
 
@@ -164,18 +90,74 @@ Pastikan response dalam format JSON yang valid."""
         if not self.api_key:
             return {"error": "API Key not configured"}
 
-        # Prepare data summary
+        # Build statistics
         total = len(documents_data)
-        doc_types = {}
+        stats = self._build_document_stats(documents_data)
+
+        prompt = f"""Analisis data dokumen HIPMI berikut:
+
+DATA DOKUMEN: Total {total}, Total Halaman {stats['total_pages']}
+Distribusi Tipe: {stats['types']}
+Distribusi Kategori: {stats['categories']}
+
+Format JSON:
+{{
+    "summary": "Ringkasan kondisi dokumentasi (2-3 kalimat)",
+    "total_documents": {total},
+    "total_pages": {stats['total_pages']},
+    "key_insights": ["Insight 1", "Insight 2", "Insight 3"],
+    "document_health": "Status kelengkapan dokumentasi",
+    "recommendations": ["Rekomendasi 1", "Rekomendasi 2"]
+}}"""
+
+        try:
+            response = self._call_api(prompt)
+            parsed = json.loads(response)
+            return parsed
+        except json.JSONDecodeError:
+            return {
+                "summary": response,
+                "total_documents": total,
+                "total_pages": stats['total_pages'],
+                "raw_analysis": response,
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _build_member_stats(self, members_data: list) -> dict:
+        """Build statistik dari data members"""
+        positions = {}
+        business = {}
+        gender = {"Male": 0, "Female": 0}
+
+        for m in members_data:
+            # Count positions
+            pos = m.get("jabatan", "Unknown")
+            positions[pos] = positions.get(pos, 0) + 1
+
+            # Count business categories
+            biz = m.get("kategori_bidang_usaha", "Unknown")
+            business[biz] = business.get(biz, 0) + 1
+
+            # Count gender
+            g = m.get("jenis_kelamin")
+            if g in ["Male", "Female"]:
+                gender[g] += 1
+
+        return {"positions": positions, "business": business, "gender": gender}
+
+    def _build_document_stats(self, documents_data: list) -> dict:
+        """Build statistik dari data documents"""
+        types_count = {}
         categories = {}
         total_pages = 0
 
         for doc in documents_data:
-            # Count by document type
+            # Count types
             dtype = doc.get("document_type", "Unknown")
-            doc_types[dtype] = doc_types.get(dtype, 0) + 1
+            types_count[dtype] = types_count.get(dtype, 0) + 1
 
-            # Count by category
+            # Count categories
             cat = doc.get("category", "Uncategorized")
             categories[cat] = categories.get(cat, 0) + 1
 
@@ -184,56 +166,10 @@ Pastikan response dalam format JSON yang valid."""
             if pages:
                 total_pages += pages
 
-        data_summary = f"""
-Total Dokumen: {total}
-Total Halaman: {total_pages}
-Distribusi Tipe: {doc_types}
-Distribusi Kategori: {categories}
-"""
-
-        prompt = f"""Sebagai AI analyst untuk organisasi HIPMI, analisis data dokumen berikut dan berikan insight:
-
-DATA DOKUMEN HIPMI:
-{data_summary}
-
-Berikan analisis dalam format JSON dengan struktur:
-{{
-    "summary": "Ringkasan singkat kondisi dokumentasi HIPMI (2-3 kalimat)",
-    "total_documents": {total},
-    "total_pages": {total_pages},
-    "key_insights": [
-        "Insight 1 tentang distribusi tipe dokumen",
-        "Insight 2 tentang kategorisasi",
-        "Insight 3 tentang kelengkapan dokumentasi"
-    ],
-    "document_health": "Status kelengkapan dan kualitas dokumentasi",
-    "recommendations": [
-        "Rekomendasi 1 untuk perbaikan dokumentasi",
-        "Rekomendasi 2 untuk organisasi dokumen"
-    ]
-}}
-
-Pastikan response dalam format JSON yang valid."""
-
-        try:
-            response = self._call_api(prompt)
-            # Try to parse as JSON, if fails return as text
-            import json
-
-            try:
-                return json.loads(response)
-            except:
-                return {
-                    "summary": response,
-                    "total_documents": total,
-                    "total_pages": total_pages,
-                    "raw_analysis": response,
-                }
-        except Exception as e:
-            return {"error": str(e)}
+        return {"types": types_count, "categories": categories, "total_pages": total_pages}
 
     def _call_api(self, prompt: str) -> str:
-        """Call Gemini API menggunakan google-genai library"""
+        """Call Gemini API"""
         if not self.client:
             raise Exception("Gemini API client not initialized. Check GEMINI_API_KEY.")
 
@@ -248,7 +184,6 @@ Pastikan response dalam format JSON yang valid."""
                 ),
             )
 
-            # Handle None case
             if response.text is None:
                 raise Exception("Gemini API returned empty response")
 
