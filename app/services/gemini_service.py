@@ -90,23 +90,25 @@ Gunakan bahasa yang profesional namun mudah dipahami. Fokus pada insight yang pr
 
         try:
             response = self._call_api(prompt).strip()
-            
+
             # Parse response
             summary = ""
             key_insights = []
             trends = ""
             recommendations = []
-            
+
             current_section = None
             for line in response.split("\n"):
                 line = line.strip()
                 if not line:
                     continue
-                    
+
                 if line.upper().startswith("SUMMARY"):
                     current_section = "summary"
                     continue
-                elif line.upper().startswith("KEY_INSIGHTS") or line.upper().startswith("KEY INSIGHTS"):
+                elif line.upper().startswith("KEY_INSIGHTS") or line.upper().startswith(
+                    "KEY INSIGHTS"
+                ):
                     current_section = "insights"
                     continue
                 elif line.upper().startswith("TRENDS"):
@@ -115,12 +117,12 @@ Gunakan bahasa yang profesional namun mudah dipahami. Fokus pada insight yang pr
                 elif line.upper().startswith("RECOMMENDATIONS"):
                     current_section = "recommendations"
                     continue
-                
+
                 # Clean line dari bullet points
                 clean_line = line.lstrip("•-*").strip()
                 if not clean_line or clean_line.startswith("#"):
                     continue
-                
+
                 if current_section == "summary":
                     summary += " " + clean_line if summary else clean_line
                 elif current_section == "insights":
@@ -131,16 +133,24 @@ Gunakan bahasa yang profesional namun mudah dipahami. Fokus pada insight yang pr
                 elif current_section == "recommendations":
                     if clean_line:
                         recommendations.append(clean_line)
-            
+
             # Fallback jika parsing gagal
             if not summary:
                 summary = "Data keanggotaan HIPMI tersimpan dengan baik di sistem."
             if not key_insights:
-                key_insights = ["Analisis sedang diproses", "Silakan coba beberapa saat lagi", "Data tersedia untuk analisis lebih lanjut"]
+                key_insights = [
+                    "Analisis sedang diproses",
+                    "Silakan coba beberapa saat lagi",
+                    "Data tersedia untuk analisis lebih lanjut",
+                ]
             if not trends:
                 trends = "Tren menunjukkan perkembangan positif organisasi."
             if not recommendations:
-                recommendations = ["Pertahankan kualitas data", "Lakukan pembaruan rutin", "Monitor perkembangan anggota"]
+                recommendations = [
+                    "Pertahankan kualitas data",
+                    "Lakukan pembaruan rutin",
+                    "Monitor perkembangan anggota",
+                ]
 
             return {
                 "summary": summary.strip(),
@@ -157,15 +167,15 @@ Gunakan bahasa yang profesional namun mudah dipahami. Fokus pada insight yang pr
                 "key_insights": [
                     f"Total {total} anggota terdaftar dalam sistem",
                     f"Distribusi gender: {stats['gender'].get('Male', 0)} Pria, {stats['gender'].get('Female', 0)} Wanita",
-                    f"Terdapat {len(stats['business'])} kategori bidang usaha yang berbeda"
+                    f"Terdapat {len(stats['business'])} kategori bidang usaha yang berbeda",
                 ],
                 "trends": "Data menunjukkan keragaman bidang usaha di antara anggota HIPMI.",
                 "recommendations": [
                     "Lakukan update data anggota secara berkala",
                     "Monitor distribusi anggota per bidang",
-                    "Tingkatkan engagement melalui program yang relevan"
+                    "Tingkatkan engagement melalui program yang relevan",
                 ],
-                "error_detail": str(e)
+                "error_detail": str(e),
             }
 
     def analyze_documents_data(self, documents_data: list) -> dict:
@@ -207,62 +217,76 @@ Gunakan bahasa yang profesional namun mudah dipahami."""
 
         try:
             response = self._call_api(prompt).strip()
-            
+
             # Parse response
             summary = ""
             key_insights = []
             document_health = ""
             recommendations = []
-            
+
             current_section = None
             for line in response.split("\n"):
                 line = line.strip()
                 if not line:
                     continue
-                    
+
                 if line.upper().startswith("SUMMARY"):
                     current_section = "summary"
                     continue
-                elif line.upper().startswith("KEY_INSIGHTS") or line.upper().startswith("KEY INSIGHTS"):
+                elif line.upper().startswith("KEY_INSIGHTS") or line.upper().startswith(
+                    "KEY INSIGHTS"
+                ):
                     current_section = "insights"
                     continue
-                elif line.upper().startswith("DOCUMENT_HEALTH") or line.upper().startswith("DOCUMENT HEALTH"):
+                elif line.upper().startswith(
+                    "DOCUMENT_HEALTH"
+                ) or line.upper().startswith("DOCUMENT HEALTH"):
                     current_section = "health"
                     continue
                 elif line.upper().startswith("RECOMMENDATIONS"):
                     current_section = "recommendations"
                     continue
-                
+
                 # Clean line
                 clean_line = line.lstrip("•-*").strip()
                 if not clean_line or clean_line.startswith("#"):
                     continue
-                
+
                 if current_section == "summary":
                     summary += " " + clean_line if summary else clean_line
                 elif current_section == "insights":
                     if clean_line:
                         key_insights.append(clean_line)
                 elif current_section == "health":
-                    document_health += " " + clean_line if document_health else clean_line
+                    document_health += (
+                        " " + clean_line if document_health else clean_line
+                    )
                 elif current_section == "recommendations":
                     if clean_line:
                         recommendations.append(clean_line)
-            
+
             # Fallback
             if not summary:
                 summary = f"Sistem memiliki {total} dokumen dengan total {stats['total_pages']} halaman."
             if not key_insights:
-                key_insights = ["Dokumentasi tersedia untuk analisis", "Data dokumen tersimpan dengan baik", "Sistem siap untuk pengelolaan lebih lanjut"]
+                key_insights = [
+                    "Dokumentasi tersedia untuk analisis",
+                    "Data dokumen tersimpan dengan baik",
+                    "Sistem siap untuk pengelolaan lebih lanjut",
+                ]
             if not document_health:
                 document_health = "Kondisi dokumentasi dalam status baik."
             if not recommendations:
-                recommendations = ["Pertahankan kualitas dokumentasi", "Update dokumen secara berkala", "Monitor kelengkapan dokumen"]
+                recommendations = [
+                    "Pertahankan kualitas dokumentasi",
+                    "Update dokumen secara berkala",
+                    "Monitor kelengkapan dokumen",
+                ]
 
             return {
                 "summary": summary.strip(),
                 "total_documents": total,
-                "total_pages": stats['total_pages'],
+                "total_pages": stats["total_pages"],
                 "key_insights": key_insights[:3],
                 "document_health": document_health.strip(),
                 "recommendations": recommendations[:3],
@@ -271,19 +295,19 @@ Gunakan bahasa yang profesional namun mudah dipahami."""
             return {
                 "summary": f"Sistem memiliki {total} dokumen dengan total {stats['total_pages']} halaman.",
                 "total_documents": total,
-                "total_pages": stats['total_pages'],
+                "total_pages": stats["total_pages"],
                 "key_insights": [
                     f"Total {total} dokumen tersimpan di sistem",
                     f"Terdapat {len(stats['categories'])} kategori dokumen",
-                    f"Total {stats['total_pages']} halaman dokumentasi"
+                    f"Total {stats['total_pages']} halaman dokumentasi",
                 ],
                 "document_health": "Dokumentasi tersimpan dengan baik di sistem.",
                 "recommendations": [
                     "Lakukan categorization dokumen secara konsisten",
                     "Update metadata dokumen secara berkala",
-                    "Monitor kelengkapan dokumentasi organisasi"
+                    "Monitor kelengkapan dokumentasi organisasi",
                 ],
-                "error_detail": str(e)
+                "error_detail": str(e),
             }
 
     def _build_member_stats(self, members_data: list) -> dict:
@@ -328,7 +352,11 @@ Gunakan bahasa yang profesional namun mudah dipahami."""
             if pages:
                 total_pages += pages
 
-        return {"types": types_count, "categories": categories, "total_pages": total_pages}
+        return {
+            "types": types_count,
+            "categories": categories,
+            "total_pages": total_pages,
+        }
 
     def _call_api(self, prompt: str) -> str:
         """Call Gemini API"""
